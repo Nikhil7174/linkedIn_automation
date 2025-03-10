@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>LinkedIn Message Prioritizer</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div class="popup-container">
+    <header>
+      <h1>LinkedIn Message Prioritizer</h1>
+    </header>
+    
+    <div class="stats-section">
+      <h2>Message Statistics</h2>
+      <div class="stats-container">
+        <div class="stat-item">
+          <span class="stat-label">High Priority:</span>
+          <span id="high-count" class="stat-value">0</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Medium Priority:</span>
+          <span id="medium-count" class="stat-value">0</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Low Priority:</span>
+          <span id="low-count" class="stat-value">0</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Total Messages:</span>
+          <span id="total-count" class="stat-value">0</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="actions-section">
+      <button id="refresh-messages" class="secondary-button">Refresh Messages</button>
+      <button id="open-linkedin" class="primary-button">Open LinkedIn Messages</button>
+    </div>
+  </div>
+  
+  <script src="js/popup.js"></script>
+</body>
+</html>
