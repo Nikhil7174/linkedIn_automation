@@ -53,6 +53,48 @@ export const extractMessages = (): void => {
   }
 }
 
+const addMessageCategorizationUI = (): void => {
+  if (window.location.href.includes('messaging')) {
+    if (document.getElementById('linkedin-prioritizer-container')) {
+      return;
+    }
+
+    const container: HTMLDivElement = document.createElement('div');
+    container.id = 'linkedin-prioritizer-container';
+    container.className = 'linkedin-prioritizer-container';
+
+    const tabsHTML: string = `
+      <div class="prioritizer-tabs">
+        <button class="tab-button active" data-priority="all">All</button>
+        <button class="tab-button" data-priority="high">High Priority</button>
+        <button class="tab-button" data-priority="medium">Medium Priority</button>
+        <button class="tab-button" data-priority="low">Low Priority</button>
+      </div>
+      <div class="prioritizer-content">
+        <div id="messages-container" class="messages-container"></div>
+      </div>
+    `;
+
+    container.innerHTML = tabsHTML;
+
+    const messageListContainer: Element | null = document.querySelector('.msg-conversations-container');
+    if (messageListContainer && messageListContainer.parentNode) {
+      messageListContainer.parentNode.insertBefore(container, messageListContainer);
+
+      const tabButtons: NodeListOf<HTMLButtonElement> = document.querySelectorAll('.tab-button');
+      tabButtons.forEach((button: HTMLButtonElement) => {
+        button.addEventListener('click', function (this: HTMLButtonElement) {
+          tabButtons.forEach(btn => btn.classList.remove('active'));
+          this.classList.add('active');
+          displayMessages(this.getAttribute('data-priority') as Priority);
+        });
+      });
+
+      displayMessages('all');
+    }
+  }
+}
+
 // Function to display messages filtered by priority
 export const displayMessages = (priority: Priority): void => {
   chrome.storage.local.get(
@@ -120,5 +162,19 @@ chrome.runtime.onMessage.addListener(
 window.addEventListener('load', () => {
   setTimeout(() => {
     extractMessages();
+    addMessageCategorizationUI();
   }, 2000);
 });
+
+let lastUrl: string = location.href;
+const observer: MutationObserver = new MutationObserver(() => {
+  const url: string = location.href;
+  if (url !== lastUrl) {
+    lastUrl = url;
+    setTimeout(() => {
+      extractMessages();
+      addMessageCategorizationUI();
+    }, 2000);
+  }
+});
+observer.observe(document, { subtree: true, childList: true });

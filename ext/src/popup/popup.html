@@ -4,7 +4,7 @@
   <title>LinkedIn Message Prioritizer</title>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="./css/style.css">
 </head>
 <body>
   <div class="popup-container">
@@ -31,6 +31,49 @@
           <span class="stat-label">Total Messages:</span>
           <span id="total-count" class="stat-value">0</span>
         </div>
+      </div>
+    </div>
+    
+    <div class="automation-section">
+      <h2>Message Automation</h2>
+      <div class="toggle-container">
+        <label class="toggle">
+          <input type="checkbox" id="automation-toggle">
+          <span class="slider round"></span>
+        </label>
+        <span class="toggle-label">Enable Automation</span>
+      </div>
+      
+      <div id="automation-settings" class="automation-settings hidden">
+        <h3>Response Templates</h3>
+        
+        <div class="template-section">
+          <h4>High Priority</h4>
+          <textarea id="high-template" placeholder="Enter response template for high priority messages..."></textarea>
+        </div>
+        
+        <div class="template-section">
+          <h4>Medium Priority</h4>
+          <textarea id="medium-template" placeholder="Enter response template for medium priority messages..."></textarea>
+        </div>
+        
+        <div class="template-section">
+          <h4>Low Priority</h4>
+          <textarea id="low-template" placeholder="Enter response template for low priority messages..."></textarea>
+        </div>
+        
+        <button id="save-templates" class="primary-button">Save Templates</button>
+      </div>
+    </div>
+    
+    <div class="important-contacts-section">
+      <h2>Important Contacts</h2>
+      <div class="input-group">
+        <input type="text" id="contact-input" placeholder="Add important contact name...">
+        <button id="add-contact" class="primary-button">Add</button>
+      </div>
+      <div id="contacts-list" class="contacts-list">
+        <!-- Contact items will be added here dynamically -->
       </div>
     </div>
     

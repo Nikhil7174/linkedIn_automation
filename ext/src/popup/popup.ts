@@ -6,8 +6,11 @@ import { CategorizedMessages, UserPreferences, AutomationSettings } from "../lib
     loadImportantContacts();
     loadAutomationSettings();
   
+    document.getElementById('add-contact')?.addEventListener('click', addImportantContact);
     document.getElementById('refresh-messages')?.addEventListener('click', refreshMessages);
     document.getElementById('open-linkedin')?.addEventListener('click', openLinkedInMessages);
+    document.getElementById('automation-toggle')?.addEventListener('change', toggleAutomation);
+    document.getElementById('save-templates')?.addEventListener('click', saveTemplates);
   });
   
   // Function to load message statistics
@@ -71,7 +74,30 @@ import { CategorizedMessages, UserPreferences, AutomationSettings } from "../lib
       });
     }
   }
-
+  
+  // Function to add an important contact
+  export const addImportantContact = (): void => {
+    const contactInput = document.getElementById('contact-input') as HTMLInputElement | null;
+    if (!contactInput) return;
+    const contact: string = contactInput.value.trim();
+  
+    if (contact) {
+      // Send message to background script
+      chrome.runtime.sendMessage(
+        {
+          action: 'addImportantContact',
+          contact: contact
+        },
+        function(response: { success: boolean }): void {
+          if (response && response.success) {
+            addContactToList(contact);
+            contactInput.value = '';
+          }
+        }
+      );
+    }
+  }
+  
   // Function to remove an important contact
   export const removeImportantContact = (contact: string): void => {
     chrome.runtime.sendMessage(
@@ -81,7 +107,7 @@ import { CategorizedMessages, UserPreferences, AutomationSettings } from "../lib
       },
       function(response: { success: boolean }): void {
         if (response && response.success) {
-          loadImportantContacts(); // Reload the contacts list
+          loadImportantContacts();
         }
       }
     );
@@ -110,13 +136,10 @@ import { CategorizedMessages, UserPreferences, AutomationSettings } from "../lib
         const automationSettingsElem = document.getElementById('automation-settings');
         
         if (automationToggle && automationSettingsElem) {
-          // Set toggle state
           automationToggle.checked = settings.enabled;
-          // Show/hide settings based on toggle
           automationSettingsElem.classList.toggle('hidden', !settings.enabled);
         }
   
-        // Load templates if available
         if (settings.templates) {
           const highTemplateElem = document.getElementById('high-template') as HTMLTextAreaElement | null;
           const mediumTemplateElem = document.getElementById('medium-template') as HTMLTextAreaElement | null;
@@ -129,3 +152,79 @@ import { CategorizedMessages, UserPreferences, AutomationSettings } from "../lib
       }
     });
   }
+  
+  // Function to toggle automation settings visibility
+  const toggleAutomation = (): void => {
+    const automationToggle = document.getElementById('automation-toggle') as HTMLInputElement | null;
+    const automationSettingsElem = document.getElementById('automation-settings');
+    
+    if (!automationToggle || !automationSettingsElem) return;
+    
+    const enabled: boolean = automationToggle.checked;
+    automationSettingsElem.classList.toggle('hidden', !enabled);
+    
+    // Save automation state
+    chrome.storage.local.get(['userPreferences'], function(result: { userPreferences?: UserPreferences }): void {
+      const preferences: UserPreferences = result.userPreferences || {};
+  
+      if (!preferences.automationSettings) {
+        preferences.automationSettings = { enabled: false };
+      }
+  
+      preferences.automationSettings.enabled = enabled;
+  
+      chrome.storage.local.set({ 'userPreferences': preferences });
+    });
+  }
+  
+  // Function to save response templates
+  const saveTemplates = (): void => {
+    const highTemplateElem = document.getElementById('high-template') as HTMLTextAreaElement | null;
+    const mediumTemplateElem = document.getElementById('medium-template') as HTMLTextAreaElement | null;
+    const lowTemplateElem = document.getElementById('low-template') as HTMLTextAreaElement | null;
+    
+    if (!highTemplateElem || !mediumTemplateElem || !lowTemplateElem) return;
+    
+    const highTemplate: string = highTemplateElem.value;
+    const mediumTemplate: string = mediumTemplateElem.value;
+    const lowTemplate: string = lowTemplateElem.value;
+    
+    chrome.storage.local.get(['userPreferences'], function(result: { userPreferences?: UserPreferences }): void {
+      const preferences: UserPreferences = result.userPreferences || {};
+  
+      if (!preferences.automationSettings) {
+        preferences.automationSettings = { enabled: false };
+      }
+  
+      preferences.automationSettings.templates = {
+        high: highTemplate,
+        medium: mediumTemplate,
+        low: lowTemplate
+      };
+  
+      chrome.storage.local.set({ 'userPreferences': preferences }, function(): void {
+        showStatusMessage('Templates saved successfully!');
+      });
+    });
+  }
+  
+  // Function to show status message
+  const showStatusMessage = (message: string): void => {
+    const statusDiv: HTMLDivElement = document.createElement('div');
+    statusDiv.className = 'status-message';
+    statusDiv.textContent = message;
+  
+    document.body.appendChild(statusDiv);
+  
+    setTimeout((): void => {
+      statusDiv.classList.add('show');
+    }, 10);
+  
+    setTimeout((): void => {
+      statusDiv.classList.remove('show');
+      setTimeout((): void => {
+        statusDiv.parentNode?.removeChild(statusDiv);
+      }, 300);
+    }, 2000);
+  }
+  
