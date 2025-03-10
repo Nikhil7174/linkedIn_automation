@@ -1,6 +1,7 @@
 const Dotenv = require('dotenv-webpack');
 const CopyPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const path = require('path');
 const outputPath = 'dist';
 
@@ -27,6 +28,13 @@ module.exports = {
                 exclude: /node_modules/,
             },
             {
+                test: /\.css$/,
+                use: [
+                    MiniCssExtractPlugin.loader,
+                    'css-loader'
+                ]
+            },
+            {
                 test: /\.(jpg|jpeg|png|gif|woff|woff2|eot|ttf|svg)$/i,
                 use: 'url-loader?limit=1024'
             }
@@ -43,6 +51,10 @@ module.exports = {
             template: path.resolve(__dirname, 'src', 'popup', 'popup.html'),
             filename: 'popup.html',
             chunks: ['popup'],
+            inject: 'body'
+        }),
+        new MiniCssExtractPlugin({
+            filename: 'style/style.css'
         }),
         new Dotenv(),
     ]

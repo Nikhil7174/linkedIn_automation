@@ -1,5 +1,5 @@
 import { CategorizedMessages, UserPreferences, AutomationSettings } from "../lib/types";
-
+import './styles/style.css';
   
   document.addEventListener('DOMContentLoaded', (): void => {
     loadMessageStats();
