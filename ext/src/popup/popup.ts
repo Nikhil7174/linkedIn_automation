@@ -33,16 +33,16 @@ export class PopupManager {
     document.getElementById('automation-toggle')?.addEventListener('change', () => this.toggleAutomation());
     document.getElementById('save-templates')?.addEventListener('click', () => this.saveTemplates());
     
-    const processButton = document.createElement('button');
-    processButton.id = 'process-messages';
-    processButton.className = 'secondary-button';
-    processButton.textContent = 'Process Unresponded Messages';
-    processButton.addEventListener('click', () => this.processUnrespondedMessages());
+    // const processButton = document.createElement('button');
+    // processButton.id = 'process-messages';
+    // processButton.className = 'secondary-button';
+    // processButton.textContent = 'Process Unresponded Messages';
+    // processButton.addEventListener('click', () => this.processUnrespondedMessages());
     
-    const automationSettingsElem = document.querySelector('.automation-settings');
-    if (automationSettingsElem) {
-      automationSettingsElem.appendChild(processButton);
-    }
+    // const automationSettingsElem = document.querySelector('.automation-settings');
+    // if (automationSettingsElem) {
+    //   automationSettingsElem.appendChild(processButton);
+    // }
   }
 
   private async processUnrespondedMessages(): Promise<void> {
@@ -101,6 +101,7 @@ export class PopupManager {
       linkedInMessages?: any[] 
     }) => {
       const categorized: CategorizedMessages = result.categorizedMessages || { high: [], medium: [], low: [] };
+      console.log("categorized", categorized)
       const totalMessages: number = result.linkedInMessages ? result.linkedInMessages.length : 0;
   
       const highCountElem = document.getElementById('high-count');
@@ -134,7 +135,7 @@ export class PopupManager {
   private addContactToList(contact: string): void {
     const contactsList = document.getElementById('contacts-list');
     if (!contactsList) return;
-    
+  
     const contactItem: HTMLDivElement = document.createElement('div');
     contactItem.className = 'contact-item';
   
@@ -147,25 +148,29 @@ export class PopupManager {
   
     const removeButton = contactItem.querySelector('.remove-contact') as HTMLButtonElement | null;
     if (removeButton) {
-      removeButton.addEventListener('click', function(this: HTMLButtonElement): void {
-        const contactToRemove = this.getAttribute('data-contact');
+      removeButton.addEventListener('click', (event: MouseEvent) => {
+        event.stopPropagation(); // Prevent any parent listeners from triggering
+        const contactToRemove = removeButton.getAttribute('data-contact');
         if (contactToRemove) {
           chrome.runtime.sendMessage(
             {
               action: 'removeImportantContact',
               contact: contactToRemove
             },
-            function(response: { success: boolean }): void {
+            (response: { success: boolean }) => {
               if (response && response.success) {
-                const popupManager = new PopupManager();
-                popupManager.loadImportantContacts();
+                // Remove the contact item from the DOM on success
+                contactItem.remove();
+                this.showStatusMessage('Contact removed successfully!');
+              } else {
+                // this.showStatusMessage('Failed to remove contact!');
               }
             }
           );
         }
       });
     }
-  }
+  }  
 
   private addImportantContact(): void {
     const contactInput = document.getElementById('contact-input') as HTMLInputElement | null;

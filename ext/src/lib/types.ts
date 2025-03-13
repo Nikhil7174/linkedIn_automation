@@ -1,7 +1,7 @@
 export interface LinkedInMessage {
     id: string;
     sender: string;
-    content: string;
+    preview: string;
     links: string[];
     category?: 'job' | 'sales' | 'spam' | 'casual';
     priority: number;

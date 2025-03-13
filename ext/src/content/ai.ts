@@ -34,7 +34,7 @@ export class MessagePrioritizer {
         /investment/i
       ],
       medium: [
-        /connect/i,
+        /connection/i,
         /introduction/i,
         /referral/i,
         /manager/i,
@@ -73,9 +73,28 @@ export class MessagePrioritizer {
     };
 
     this.importantContacts = [];
+    
+    // Load important contacts from storage when initialized
+    this.loadImportantContactsFromStorage();
+  }
+
+  private loadImportantContactsFromStorage(): void {
+    chrome.storage.local.get(['importantContacts'], (result) => {
+      if (result.importantContacts && Array.isArray(result.importantContacts)) {
+        this.importantContacts = result.importantContacts;
+        console.log('Loaded important contacts from storage:', this.importantContacts);
+      }
+    });
+  }
+
+  private saveImportantContactsToStorage(): void {
+    chrome.storage.local.set({ importantContacts: this.importantContacts }, () => {
+      console.log('Saved important contacts to storage:', this.importantContacts);
+    });
   }
 
   public categorizeMessages(messages: IMessage[]): { high: string[]; medium: string[]; low: string[] } {
+    console.log("Categorizing messages:", messages);
     const categorized = {
       high: [] as string[],
       medium: [] as string[],
@@ -84,14 +103,19 @@ export class MessagePrioritizer {
 
     messages.forEach((message) => {
       const priority = this.determineMessagePriority(message);
-      categorized[priority].push(message.link);
+      categorized[priority].push(message.preview);
       message.priority = priority;
     });
-
+    console.log("Categorized results:", categorized);
     return categorized;
   }
 
   public determineMessagePriority(message: IMessage): 'high' | 'medium' | 'low' {
+    // Check if sender is in important contacts list - immediately return high priority if true
+    if (this.isImportantContact(message.sender)) {
+      return 'high';
+    }
+    
     const senderImportance = this.checkSenderImportance(message.sender);
     const contentPriority = this.analyzeMessageContent(message.preview);
     const recencyFactor = this.analyzeTimestamp(message.timestamp);
@@ -100,18 +124,22 @@ export class MessagePrioritizer {
 
     if (priorityScore >= 4) {
       return 'high';
-    } else if (priorityScore >= 2) {
+    } else if (priorityScore >= 1) {
       return 'medium';
     } else {
       return 'low';
     }
   }
+  
+  private isImportantContact(sender: string): boolean {
+    return this.importantContacts.some(contact => 
+      sender.toLowerCase().includes(contact.toLowerCase())
+    );
+  }
 
   private checkSenderImportance(sender: string): number {
-    if (this.importantContacts.some((contact) => sender.includes(contact))) {
-      return 3; // High importance
-    }
-
+    // Important contacts are now handled separately in determineMessagePriority
+    
     if (/CEO|CTO|CFO|COO|Director|VP|President|Founder|Partner|Hiring|Recruiter/i.test(sender)) {
       return 2; // Medium-high importance
     }
@@ -148,6 +176,7 @@ export class MessagePrioritizer {
     if (!timestamp) return 0;
 
     if (/just now|minute|hour|today/i.test(timestamp)) {
+      console.log("Recent message timestamp:", timestamp);
       return 1;
     }
 
@@ -157,6 +186,7 @@ export class MessagePrioritizer {
   public addImportantContact(contact: string): boolean {
     if (!this.importantContacts.includes(contact)) {
       this.importantContacts.push(contact);
+      this.saveImportantContactsToStorage();
       return true;
     }
     return false;
@@ -166,6 +196,7 @@ export class MessagePrioritizer {
     const index = this.importantContacts.indexOf(contact);
     if (index > -1) {
       this.importantContacts.splice(index, 1);
+      this.saveImportantContactsToStorage();
       return true;
     }
     return false;
@@ -174,6 +205,8 @@ export class MessagePrioritizer {
   public loadUserPreferences(preferences: IUserPreferences): void {
     if (preferences.importantContacts) {
       this.importantContacts = preferences.importantContacts;
+      // Save the loaded contacts to storage
+      this.saveImportantContactsToStorage();
     }
 
     if (preferences.customKeywords) {
