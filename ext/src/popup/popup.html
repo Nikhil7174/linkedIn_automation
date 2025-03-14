@@ -20,14 +20,6 @@
           <span id="high-count" class="stat-value">0</span>
         </div>
         <div class="stat-item">
-          <span class="stat-label">Medium Priority:</span>
-          <span id="medium-count" class="stat-value">0</span>
-        </div>
-        <div class="stat-item">
-          <span class="stat-label">Low Priority:</span>
-          <span id="low-count" class="stat-value">0</span>
-        </div>
-        <div class="stat-item">
           <span class="stat-label">Total Messages:</span>
           <span id="total-count" class="stat-value">0</span>
         </div>
@@ -48,18 +40,14 @@
         <h3>Response Templates</h3>
         
         <div class="template-section">
-          <h4>High Priority</h4>
-          <textarea id="high-template" placeholder="Enter response template for high priority messages..."></textarea>
-        </div>
-        
-        <div class="template-section">
-          <h4>Medium Priority</h4>
-          <textarea id="medium-template" placeholder="Enter response template for medium priority messages..."></textarea>
-        </div>
-        
-        <div class="template-section">
-          <h4>Low Priority</h4>
-          <textarea id="low-template" placeholder="Enter response template for low priority messages..."></textarea>
+          <h4>Priority Tags</h4>
+          <div class="input-group">
+            <input type="text" id="priority-input" placeholder="Add priority tag...">
+            <button id="add-priority" class="primary-button">Add</button>
+          </div>
+          <div id="priority-tags-list" class="tags-list">
+            <!-- Priority tag items will be added here dynamically -->
+          </div>
         </div>
         
         <button id="save-templates" class="primary-button">Save Templates</button>
@@ -77,7 +65,7 @@
       </div>
     </div>
     
-    <!-- <div class="actions-section">
+    <!-- <div class="action-buttons">
       <button id="refresh-messages" class="secondary-button">Refresh Messages</button>
       <button id="open-linkedin" class="primary-button">Open LinkedIn Messages</button>
     </div> -->

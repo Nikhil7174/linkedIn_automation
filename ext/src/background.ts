@@ -25,14 +25,9 @@ export class BackgroundManager {
       const result: { userPreferences?: UserPreferences } =
         await chrome.storage.local.get(['userPreferences']);
       if (result.userPreferences) {
+        // Only load importantContacts since automationSettings is not part of IUserPreferences.
         const userPrefs: IUserPreferences = {
-          importantContacts: result.userPreferences.importantContacts,
-          automationSettings: result.userPreferences.automationSettings
-            ? {
-                enabled: result.userPreferences.automationSettings.enabled,
-                templates: result.userPreferences.automationSettings.templates || undefined,
-              }
-            : undefined,
+          importantContacts: result.userPreferences.importantContacts
         };
         this.prioritizer.loadUserPreferences(userPrefs);
       }
@@ -86,16 +81,14 @@ export class BackgroundManager {
       sender: msg.sender,
       preview: msg.preview,
       timestamp: new Date().toISOString(),
-      // This default assignment will be updated in categorizeMessages()
-      priority: msg.priority === 1 ? "high" :
-                msg.priority === 2 ? "medium" : "low",
+      priority: ""
     }));
 
-    console.log("iMessages", iMessages)
-    
+    console.log("iMessages", iMessages);
     iMessages.forEach(ms => console.log("ims", ms));
     
-    const categorizedMessages = this.prioritizer.categorizeMessages(iMessages);
+    // Use filterHighPriorityMessages instead of categorizeMessages
+    const categorizedMessages = this.prioritizer.filterHighPriorityMessages(iMessages);
     console.log("categorizedMessages", categorizedMessages);
     
     await chrome.storage.local.set({ 'categorizedMessages': categorizedMessages });
@@ -129,12 +122,14 @@ export class BackgroundManager {
   private async setDefaultStorageValues(): Promise<void> {
     await chrome.storage.local.set({
       'linkedInMessages': [],
-      'categorizedMessages': { high: [], medium: [], low: [] },
+      // Only the high category is needed
+      'categorizedMessages': { high: [] },
       'userPreferences': {
         importantContacts: [],
         automationSettings: {
           enabled: false,
-          templates: { high: "", medium: "", low: "" }
+          // Only the high-priority template is stored
+          templates: { high: "" }
         }
       }
     });

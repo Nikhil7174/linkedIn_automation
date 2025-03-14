@@ -8,7 +8,7 @@ const outputPath = 'dist';
 const entryPoints = {
     main: path.resolve(__dirname, 'src', 'main.ts'),
     background: path.resolve(__dirname, 'src', 'background.ts'),
-    popup: path.resolve(__dirname, 'src', 'popup', 'popup.ts'),
+    popup: path.resolve(__dirname, 'src', 'popup', 'index.ts'),
 };
 
 module.exports = {

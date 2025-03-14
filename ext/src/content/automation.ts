@@ -2,15 +2,11 @@ import { IMessage, IAutomationSettings, IUserPreferences } from '../lib/types';
 
 export class MessageAutomation {
   private _enabled: boolean = false;
-  private templates: { high: string; medium: string; low: string } = { high: '', medium: '', low: '' };
+  private templates: { high: string } = { high: '' };
 
   constructor() {
     this.enabled = false;
-    this.templates = {
-      high: "",
-      medium: "",
-      low: ""
-    };
+    this.templates = { high: "" };
   }
 
   public get enabled(): boolean {
@@ -21,22 +17,21 @@ export class MessageAutomation {
     this._enabled = value;
   }
 
-  public setTemplates(templates: { high: string; medium: string; low: string }): void {
+  public setTemplates(templates: { high: string }): void {
     this.templates = templates;
   }
 
-  public getTemplates(): { high: string; medium: string; low: string } {
+  public getTemplates(): { high: string } {
     return this.templates;
   }
 
   public init(): Promise<void> {
     return new Promise((resolve) => {
       chrome.storage.local.get(['userPreferences'], (result: { userPreferences?: IUserPreferences }) => {
-        if (result.userPreferences && result.userPreferences.automationSettings) {
-          const settings: IAutomationSettings = result.userPreferences.automationSettings;
-          this.enabled = settings.enabled || false;
-          this.templates = settings.templates || { high: "", medium: "", low: "" };
-        }
+        // Since IUserPreferences no longer includes automationSettings,
+        // we set defaults here.
+        this.enabled = false;
+        this.templates = { high: "" };
         resolve();
       });
     });
@@ -46,14 +41,15 @@ export class MessageAutomation {
     return this.enabled;
   }
 
-  public getTemplate(priority: 'high' | 'medium' | 'low'): string {
-    return this.templates[priority] || "";
+  // Always returns the high-priority template
+  public getTemplate(): string {
+    return this.templates.high || "";
   }
 
   public async processMessage(message: IMessage): Promise<boolean> {
     if (!this.enabled) return false;
 
-    const template = this.getTemplate(message.priority || 'low');
+    const template = this.getTemplate();
     if (!template) return false;
 
     const personalizedMessage = this.personalizeTemplate(template, message);
@@ -94,26 +90,25 @@ export class MessageAutomation {
     return new Promise((resolve) => {
       chrome.storage.local.get(['linkedInMessages', 'categorizedMessages'], async (result: { 
         linkedInMessages?: IMessage[]; 
-        categorizedMessages?: { high: string[]; medium: string[]; low: string[] }; 
+        categorizedMessages?: { high: string[] }; 
       }) => {
         const messages: IMessage[] = result.linkedInMessages || [];
-        const categorized = result.categorizedMessages || { high: [], medium: [], low: [] };
+        const categorized = result.categorizedMessages || { high: [] };
 
         let processed = 0;
         let success = 0;
 
-        for (const priority of ['high', 'medium', 'low'] as ('high' | 'medium' | 'low')[]) {
-          for (const messageLink of categorized[priority]) {
-            const message = messages.find(m => m.link === messageLink);
+        // Process only high-priority messages
+        for (const messageLink of categorized.high) {
+          const message = messages.find(m => m.link === messageLink);
+          
+          if (message && !message.responded) {
+            processed++;
             
-            if (message && !message.responded) {
-              processed++;
-              
-              const sent = await this.processMessage(message);
-              if (sent) {
-                success++;
-                message.responded = true;
-              }
+            const sent = await this.processMessage(message);
+            if (sent) {
+              success++;
+              message.responded = true;
             }
           }
         }
