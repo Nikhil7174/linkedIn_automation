@@ -61,8 +61,8 @@ export class PriorityManager {
     const tag: string = tagInput.value.trim();
   
     if (tag) {
-      chrome.storage.local.get(['userPreferences'], (result: { userPreferences?: IUserPreferences }) => { // Changed type
-        const preferences: IUserPreferences = result.userPreferences || { priorityTags: [] }; // Safeguard with default
+      chrome.storage.local.get(['userPreferences'], (result: { userPreferences?: IUserPreferences }) => { 
+        const preferences: IUserPreferences = result.userPreferences || { priorityTags: [] };
         if (!preferences.priorityTags) {
           preferences.priorityTags = [];
         }

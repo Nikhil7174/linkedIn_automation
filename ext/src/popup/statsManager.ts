@@ -1,4 +1,3 @@
-// StatsManager.ts
 import { CategorizedMessages } from "../lib/types";
 
 export class StatsManager {

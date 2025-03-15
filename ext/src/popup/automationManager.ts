@@ -1,4 +1,3 @@
-// AutomationManager.ts
 import { IUserPreferences, AutomationSettings } from "../lib/types";
 import { MessageAutomation } from "../content/automation";
 import { UIUtils } from "./uiUtils";

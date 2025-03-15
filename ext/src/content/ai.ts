@@ -14,6 +14,20 @@ export class MessagePrioritizer {
     /CEO|CTO|CFO|COO/i,
   ];
 
+   // NEW: Spam patterns array
+   private static readonly DEFAULT_SPAM_PATTERNS: RegExp[] = [
+    /free\s+offer/i,
+    /click\s+here/i,
+    /buy\s+now/i,
+    /limited\s+time/i,
+    /sponsored/i,
+    /promo(?:tion)?/i,
+    /discount/i,
+    /winner/i,
+    /congratulations/i,
+    /subscribe/i
+  ];
+
   private keywordPatterns: {
     high: RegExp[];
   };
@@ -151,6 +165,16 @@ export class MessagePrioritizer {
       this.saveImportantContactsToStorage();
       return true;
     }
+    return false;
+  }
+
+  public isSpam(message: IMessage): boolean {
+    // Check preview text for spam keywords
+    if (MessagePrioritizer.DEFAULT_SPAM_PATTERNS.some(pattern => pattern.test(message.preview))) {
+      return true;
+    }
+    // Optionally: if you have access to DOM or extra metadata that indicates "sponsored"
+    // you can extend this check here.
     return false;
   }
 }

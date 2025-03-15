@@ -92,7 +92,18 @@ export class PopupManager {
       }
     });
   }
-  
+  private toggleSpamDetection(): void {
+    chrome.tabs.query({ url: '*://*.linkedin.com/messaging/*' }, (tabs) => {
+      if (tabs.length > 0 && tabs[0].id) {
+        // Send a message to content script to detect spam messages
+        chrome.tabs.sendMessage(tabs[0].id, { action: 'detectSpam' }, (response) => {
+          console.log("Spam detection triggered", response);
+        });
+      } else {
+        alert('Please open the LinkedIn messaging page to detect spam messages.');
+      }
+    });
+  }
 
   private attachEventListeners(): void {
     document.getElementById('add-contact')?.addEventListener('click', () => this.contactsManager.addImportantContact());
@@ -102,24 +113,6 @@ export class PopupManager {
     document.getElementById('automation-toggle')?.addEventListener('change', () => this.automationManager.toggleAutomation());
     // Add event listener for the sort button
     document.getElementById('rule-sort')?.addEventListener('click', () => this.toggleSort());
-
-    // document.getElementById('rule-sort')?.addEventListener('click', () => {
-    //   chrome.tabs.query({ url: '*://*.linkedin.com/messaging/*' }, (tabs) => {
-    //     if (tabs.length > 0 && tabs[0].id) {
-    //       chrome.tabs.sendMessage(
-    //         tabs[0].id,
-    //         { action: 'analyzeMessages', method: 'rule' },
-    //         (response) => {
-    //           console.log("Rule-Based Sorting Triggered", response);
-    //         }
-    //       );
-    //     } else {
-    //       alert('Please open the LinkedIn messaging page to sort messages.');
-    //     }
-    //   });
-    // });
-
-    // Listen for the AI-based sort button click.
     document.getElementById('ai-sort')?.addEventListener('click', () => {
       chrome.tabs.query({ url: '*://*.linkedin.com/messaging/*' }, (tabs) => {
         if (tabs.length > 0 && tabs[0].id) {
@@ -132,6 +125,15 @@ export class PopupManager {
           );
         } else {
           alert('Please open the LinkedIn messaging page to sort messages.');
+        }
+      });
+    });
+    document.getElementById('spam-toggle')?.addEventListener('change', () => {
+      chrome.tabs.query({ url: "*://*.linkedin.com/messaging/*" }, (tabs) => {
+        if (tabs.length > 0 && tabs[0].id) {
+          chrome.tabs.sendMessage(tabs[0].id, { action: "toggleSpamDetection" }, (response) => {
+            console.log("Spam detection toggled", response);
+          });
         }
       });
     });

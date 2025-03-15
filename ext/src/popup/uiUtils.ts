@@ -1,4 +1,3 @@
-// UIUtils.ts
 export class UIUtils {
     public static showStatusMessage(message: string): void {
       const statusDiv: HTMLDivElement = document.createElement('div');

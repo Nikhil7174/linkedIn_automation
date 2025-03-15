@@ -1,9 +1,6 @@
 import { MessagePrioritizer } from "./content/ai";
-import { 
-  LinkedInMessage, 
-  IMessage, 
-  IUserPreferences 
-} from "./lib/types";
+import { LinkedInMessage, IMessage, IUserPreferences } from "./lib/types";
+import { SortManager } from "./content/sortManager"; // Adjust the path as necessary
 
 export class BackgroundManager {
   private prioritizer: MessagePrioritizer;
@@ -24,7 +21,6 @@ export class BackgroundManager {
       const result: { userPreferences?: IUserPreferences } =
         await chrome.storage.local.get(['userPreferences']);
       if (result.userPreferences) {
-        // Pass the complete user preferences
         this.prioritizer.loadUserPreferences(result.userPreferences);
         console.log("Loaded user preferences:", result.userPreferences);
       }
@@ -60,6 +56,40 @@ export class BackgroundManager {
         await this.saveUserPreferences();
         sendResponse({ success: removed });
       }
+
+      // Toggle spam filter listener
+      if (request.action === "detectSpam") {
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+          if (tabs[0]?.id) {
+            chrome.scripting.executeScript(
+              {
+                target: { tabId: tabs[0].id },
+                func: () => {
+                  // Assuming SortManager is available in the content script context.
+                  const sortManager = new SortManager();
+                  const isSpamFiltered = document.body.getAttribute("data-spam-filter") === "true";
+                  if (isSpamFiltered) {
+                    sortManager.restoreOriginalOrder();
+                    document.body.setAttribute("data-spam-filter", "false");
+                  } else {
+                    sortManager.filterSpamMessages();
+                    document.body.setAttribute("data-spam-filter", "true");
+                  }
+                  // Return a result from the content script.
+                  return { status: "success" };
+                },
+              },
+              (results) => {
+                // results is an array of InjectionResult objects.
+                // Send back the result from the executed script.
+                sendResponse(results[0]?.result);
+              }
+            );
+          }
+        });
+        // Return true to indicate you are sending a response asynchronously.
+        return true;
+      }      
     });
   }
 
@@ -73,11 +103,10 @@ export class BackgroundManager {
 
   private async handleAnalyzeMessages(
     messages: LinkedInMessage[],
-    method: string = "rule", // Default to rule-based sorting
+    method: string = "rule",
     sendResponse?: (response?: any) => void
   ): Promise<void> {
     console.log('Background script received messages for analysis');
-    console.log("LinkedInMessage:", messages);
     
     const iMessages: IMessage[] = messages.map(msg => ({
       link: msg.links?.[0] || "",
@@ -87,31 +116,34 @@ export class BackgroundManager {
       priority: "",
       keywords: [] // Initialize keywords as an empty array
     }));
-
+  
     let analyzedMessages: IMessage[] = [];
     console.log("Method selected:", method);
-
+  
     if (method === "ai") {
       console.log("Using AI-based sorting...");
       analyzedMessages = await this.performAiSorting(iMessages);
     } else {
       console.log("Using rule-based prioritizer...");
-      // Use the prioritizer for rule-based sorting
-      analyzedMessages = iMessages.map(msg => ({...msg})); // Create a copy
+      analyzedMessages = iMessages.map(msg => ({ ...msg })); // Create a copy
       
-      // Process messages with the prioritizer
-      // The filterHighPriorityMessages method will modify the messages in-place
-      // by setting the priority field to 'high' for high priority messages
       const highPriorityResults = this.prioritizer.filterHighPriorityMessages(analyzedMessages);
-      
       console.log("High priority messages:", highPriorityResults.high);
     }
     
+    // Mark messages as spam if they match spam patterns
+    analyzedMessages.forEach(msg => {
+      if (this.prioritizer.isSpam(msg)) {
+        msg.priority = 'spam';
+      }
+    });
+  
     console.log("Analyzed Messages:", analyzedMessages);
     
-    // Create categorized messages object for storage
+    // Categorize messages into "high" and "spam"
     const categorizedMessages = {
-      high: analyzedMessages.filter(m => m.priority === "high")
+      high: analyzedMessages.filter(m => m.priority === "high"),
+      spam: analyzedMessages.filter(m => m.priority === "spam")
     };
     
     await chrome.storage.local.set({ 'categorizedMessages': categorizedMessages });
@@ -131,11 +163,10 @@ export class BackgroundManager {
     if (sendResponse) {
       sendResponse({ success: true });
     }
-  }
+  }  
 
   private async performAiSorting(messages: IMessage[]): Promise<IMessage[]> {
     const analyzedMessages: IMessage[] = [];
-    // Helper function for delay (ms)
     const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
     for (const message of messages) {
@@ -151,7 +182,6 @@ export class BackgroundManager {
         const data = await response.json();
         console.log("AI Response:", data);
 
-        // Use the Gemini API server's dynamic response
         if (data.isHighPriority) {
           message.priority = "high";
           message.keywords = data.keywords;
@@ -162,19 +192,15 @@ export class BackgroundManager {
         console.error("Error analyzing message:", error);
         message.priority = "";
       }
-      analyzedMessages.push({...message});
-
-      // Wait 5 seconds before processing the next message
+      analyzedMessages.push({ ...message });
       await delay(5000);
     }
-
     return analyzedMessages;
   }
 
   private async saveUserPreferences(): Promise<void> {
     const preferences: Partial<IUserPreferences> = {
       importantContacts: this.prioritizer.importantContacts,
-      // Include any other properties that should be saved
     };
     
     await chrome.storage.local.set({ 'userPreferences': preferences });
@@ -187,7 +213,7 @@ export class BackgroundManager {
       'categorizedMessages': { high: [] },
       'userPreferences': {
         importantContacts: [],
-        priorityTags: [], // Include priorityTags as needed by MessagePrioritizer
+        priorityTags: [],
         automationSettings: {
           enabled: false,
           templates: { high: "" }
@@ -195,7 +221,7 @@ export class BackgroundManager {
       }
     });
     console.log('Default storage values set on installation');
-  }
+  }    
 }
 
 new BackgroundManager();
