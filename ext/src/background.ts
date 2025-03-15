@@ -1,6 +1,5 @@
 import { MessagePrioritizer } from "./content/ai";
 import { 
-  UserPreferences, 
   LinkedInMessage, 
   IMessage, 
   IUserPreferences 
@@ -22,14 +21,12 @@ export class BackgroundManager {
 
   private async loadUserPreferences(): Promise<void> {
     try {
-      const result: { userPreferences?: UserPreferences } =
+      const result: { userPreferences?: IUserPreferences } =
         await chrome.storage.local.get(['userPreferences']);
       if (result.userPreferences) {
-        // Only load importantContacts since automationSettings is not part of IUserPreferences.
-        const userPrefs: IUserPreferences = {
-          importantContacts: result.userPreferences.importantContacts
-        };
-        this.prioritizer.loadUserPreferences(userPrefs);
+        // Pass the complete user preferences
+        this.prioritizer.loadUserPreferences(result.userPreferences);
+        console.log("Loaded user preferences:", result.userPreferences);
       }
     } catch (error) {
       console.error('Error loading user preferences', error);
@@ -38,12 +35,17 @@ export class BackgroundManager {
 
   private registerMessageListeners(): void {
     chrome.runtime.onMessage.addListener(async (
-      request: { action: string; messages?: LinkedInMessage[]; contact?: string },
+      request: { 
+        action: string; 
+        messages?: LinkedInMessage[]; 
+        contact?: string; 
+        method?: string 
+      },
       sender: chrome.runtime.MessageSender,
       sendResponse: (response?: any) => void
     ) => {
       if (request.action === 'analyzeMessages' && request.messages) {
-        await this.handleAnalyzeMessages(request.messages, sendResponse);
+        await this.handleAnalyzeMessages(request.messages, request.method || 'rule', sendResponse);
         return true; // Keep message channel open for async response
       }
       
@@ -71,30 +73,51 @@ export class BackgroundManager {
 
   private async handleAnalyzeMessages(
     messages: LinkedInMessage[],
+    method: string = "rule", // Default to rule-based sorting
     sendResponse?: (response?: any) => void
   ): Promise<void> {
     console.log('Background script received messages for analysis');
-    console.log("LinkedInMessage---------------", messages);
+    console.log("LinkedInMessage:", messages);
     
     const iMessages: IMessage[] = messages.map(msg => ({
       link: msg.links?.[0] || "",
       sender: msg.sender,
       preview: msg.preview,
       timestamp: new Date().toISOString(),
-      priority: ""
+      priority: "",
+      keywords: [] // Initialize keywords as an empty array
     }));
 
-    console.log("iMessages", iMessages);
-    iMessages.forEach(ms => console.log("ims", ms));
+    let analyzedMessages: IMessage[] = [];
+    console.log("Method selected:", method);
+
+    if (method === "ai") {
+      console.log("Using AI-based sorting...");
+      analyzedMessages = await this.performAiSorting(iMessages);
+    } else {
+      console.log("Using rule-based prioritizer...");
+      // Use the prioritizer for rule-based sorting
+      analyzedMessages = iMessages.map(msg => ({...msg})); // Create a copy
+      
+      // Process messages with the prioritizer
+      // The filterHighPriorityMessages method will modify the messages in-place
+      // by setting the priority field to 'high' for high priority messages
+      const highPriorityResults = this.prioritizer.filterHighPriorityMessages(analyzedMessages);
+      
+      console.log("High priority messages:", highPriorityResults.high);
+    }
     
-    // Use filterHighPriorityMessages instead of categorizeMessages
-    const categorizedMessages = this.prioritizer.filterHighPriorityMessages(iMessages);
-    console.log("categorizedMessages", categorizedMessages);
+    console.log("Analyzed Messages:", analyzedMessages);
+    
+    // Create categorized messages object for storage
+    const categorizedMessages = {
+      high: analyzedMessages.filter(m => m.priority === "high")
+    };
     
     await chrome.storage.local.set({ 'categorizedMessages': categorizedMessages });
     console.log('Categorized messages saved to storage');
     
-    await chrome.storage.local.set({ 'linkedInMessages': iMessages });
+    await chrome.storage.local.set({ 'linkedInMessages': analyzedMessages });
     console.log('Updated messages with priorities');
     
     const tabs: chrome.tabs.Tab[] = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -108,11 +131,50 @@ export class BackgroundManager {
     if (sendResponse) {
       sendResponse({ success: true });
     }
-  }  
+  }
+
+  private async performAiSorting(messages: IMessage[]): Promise<IMessage[]> {
+    const analyzedMessages: IMessage[] = [];
+    // Helper function for delay (ms)
+    const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    for (const message of messages) {
+      try {
+        const response = await fetch("http://localhost:3001/check-high-priority", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            highPriorityKeywords: ["offer", "job", "urgent", "important"],
+            previewText: message.preview,
+          }),
+        });
+        const data = await response.json();
+        console.log("AI Response:", data);
+
+        // Use the Gemini API server's dynamic response
+        if (data.isHighPriority) {
+          message.priority = "high";
+          message.keywords = data.keywords;
+        } else {
+          message.priority = "";
+        }
+      } catch (error) {
+        console.error("Error analyzing message:", error);
+        message.priority = "";
+      }
+      analyzedMessages.push({...message});
+
+      // Wait 5 seconds before processing the next message
+      await delay(5000);
+    }
+
+    return analyzedMessages;
+  }
 
   private async saveUserPreferences(): Promise<void> {
-    const preferences: Partial<UserPreferences> = {
-      importantContacts: this.prioritizer.importantContacts
+    const preferences: Partial<IUserPreferences> = {
+      importantContacts: this.prioritizer.importantContacts,
+      // Include any other properties that should be saved
     };
     
     await chrome.storage.local.set({ 'userPreferences': preferences });
@@ -122,13 +184,12 @@ export class BackgroundManager {
   private async setDefaultStorageValues(): Promise<void> {
     await chrome.storage.local.set({
       'linkedInMessages': [],
-      // Only the high category is needed
       'categorizedMessages': { high: [] },
       'userPreferences': {
         importantContacts: [],
+        priorityTags: [], // Include priorityTags as needed by MessagePrioritizer
         automationSettings: {
           enabled: false,
-          // Only the high-priority template is stored
           templates: { high: "" }
         }
       }

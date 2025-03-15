@@ -1,10 +1,10 @@
 // ContactsManager.ts
-import { UserPreferences } from "../lib/types";
+import { IUserPreferences } from "../lib/types";
 import { UIUtils } from "./uiUtils";
 
 export class ContactsManager {
   public loadImportantContacts(): void {
-    chrome.storage.local.get(['userPreferences'], (result: { userPreferences?: UserPreferences }) => {
+    chrome.storage.local.get(['userPreferences'], (result: { userPreferences?: IUserPreferences }) => {
       if (result.userPreferences && result.userPreferences.importantContacts) {
         const contacts: string[] = result.userPreferences.importantContacts;
         const contactsList = document.getElementById('contacts-list');
@@ -36,8 +36,8 @@ export class ContactsManager {
         event.stopPropagation();
         const contactToRemove = removeButton.getAttribute('data-contact');
         if (contactToRemove) {
-          chrome.storage.local.get(['userPreferences'], (result: { userPreferences?: UserPreferences }) => {
-            const preferences: UserPreferences = result.userPreferences || {};
+          chrome.storage.local.get(['userPreferences'], (result: { userPreferences?: IUserPreferences }) => {
+            const preferences: IUserPreferences = result.userPreferences || {};
             if (preferences.importantContacts) {
               preferences.importantContacts = preferences.importantContacts.filter(c => c !== contactToRemove);
               chrome.storage.local.set({ 'userPreferences': preferences }, () => {
@@ -61,8 +61,8 @@ export class ContactsManager {
     const contact: string = contactInput.value.trim();
   
     if (contact) {
-      chrome.storage.local.get(['userPreferences'], (result: { userPreferences?: UserPreferences }) => {
-        const preferences: UserPreferences = result.userPreferences || {};
+      chrome.storage.local.get(['userPreferences'], (result: { userPreferences?: IUserPreferences }) => {
+        const preferences: IUserPreferences = result.userPreferences || {};
         if (!preferences.importantContacts) {
           preferences.importantContacts = [];
         }

@@ -1,11 +1,11 @@
 // PriorityManager.ts
-import { UserPreferences } from "../lib/types";
+import { IUserPreferences } from "../lib/types"; // Changed import
 import { UIUtils } from "./uiUtils";
 
 export class PriorityManager {
   public loadPriorityTags(): void {
-    chrome.storage.local.get(['userPreferences'], (result: { userPreferences?: UserPreferences }) => {
-      if (result.userPreferences && result.userPreferences.priorityTags) {
+    chrome.storage.local.get(['userPreferences'], (result: { userPreferences?: IUserPreferences }) => { // Changed type
+      if (result.userPreferences?.priorityTags) { // Optional chaining
         const tags: string[] = result.userPreferences.priorityTags;
         const tagsList = document.getElementById('priority-tags-list');
         if (tagsList) {
@@ -36,8 +36,8 @@ export class PriorityManager {
         event.stopPropagation();
         const tagToRemove = removeButton.getAttribute('data-tag');
         if (tagToRemove) {
-          chrome.storage.local.get(['userPreferences'], (result: { userPreferences?: UserPreferences }) => {
-            const preferences: UserPreferences = result.userPreferences || {};
+          chrome.storage.local.get(['userPreferences'], (result: { userPreferences?: IUserPreferences }) => { // Changed type
+            const preferences: IUserPreferences = result.userPreferences || {}; // Changed type
             if (preferences.priorityTags) {
               preferences.priorityTags = preferences.priorityTags.filter(t => t !== tagToRemove);
               chrome.storage.local.set({ 'userPreferences': preferences }, () => {
@@ -61,8 +61,8 @@ export class PriorityManager {
     const tag: string = tagInput.value.trim();
   
     if (tag) {
-      chrome.storage.local.get(['userPreferences'], (result: { userPreferences?: UserPreferences }) => {
-        const preferences: UserPreferences = result.userPreferences || {};
+      chrome.storage.local.get(['userPreferences'], (result: { userPreferences?: IUserPreferences }) => { // Changed type
+        const preferences: IUserPreferences = result.userPreferences || { priorityTags: [] }; // Safeguard with default
         if (!preferences.priorityTags) {
           preferences.priorityTags = [];
         }

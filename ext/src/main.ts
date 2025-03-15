@@ -16,20 +16,47 @@ class LinkedInMessagesManager {
     this.sortManager = new SortManager();
     this.observerManager = new ObserverManager(() => this.handleUrlOrMessageChange());
 
+    // Listen for messages from the popup
+    chrome.runtime.onMessage.addListener(this.handleMessages.bind(this));
+
     window.addEventListener('load', () => {
       setTimeout(() => {
         this.observerManager.initialize();
         this.messageManager.extractMessages();
-        this.uiManager.addUI(() => this.toggleSort());
+        // No longer adding UI elements to LinkedIn page
         this.uiManager.updateConversationCardIndicators();
       }, 2000);
     });
   }
 
+  private handleMessages(message: any, sender: chrome.runtime.MessageSender, sendResponse: (response?: any) => void): void {
+    if (message.action === 'toggleSort') {
+      this.toggleSort();
+      sendResponse({ success: true, isSorted: this.isSorted });
+    } else if (message.action === 'getState') {
+      sendResponse({ 
+        isSorted: this.isSorted,
+        messageCount: this.messageManager.getMessageCount() 
+      });
+    } else if (message.action === 'extractMessages') {
+      this.messageManager.extractMessages();
+      sendResponse({ success: true });
+    }
+  }
+
   private handleUrlOrMessageChange(): void {
     // Handle URL changes or new messages detected by ObserverManager
     this.messageManager.extractMessages();
-    this.uiManager.updateSortButton(this.isSorted, this.messageManager.getMessageCount());
+    
+    // Notify popup about state changes
+    chrome.runtime.sendMessage({
+      action: 'stateUpdate',
+      data: {
+        isSorted: this.isSorted,
+        messageCount: this.messageManager.getMessageCount()
+      }
+    });
+    
     if (this.isSorted) {
       this.sortManager.applyIncrementalSort();
     }
@@ -37,12 +64,24 @@ class LinkedInMessagesManager {
 
   private toggleSort(): void {
     if (this.isSorted) {
-      this.sortManager.restoreOriginalOrder();
+      // Reset: restore original order and reconnect observers
+      // this.sortManager.restoreOriginalOrder();
+      this.observerManager.reconnectObservers();
     } else {
+      // Sort: apply sort and disconnect observers to prevent repeated sorting
       this.sortManager.sortMessages();
+      this.observerManager.disconnectObservers();
     }
     this.isSorted = !this.isSorted;
-    this.uiManager.updateSortButton(this.isSorted, this.messageManager.getMessageCount());
+  
+    // Notify popup about state changes
+    chrome.runtime.sendMessage({
+      action: 'stateUpdate',
+      data: {
+        isSorted: this.isSorted,
+        messageCount: this.messageManager.getMessageCount()
+      }
+    });
   }
 }
 

@@ -207,6 +207,40 @@ textarea {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
+.sort-section {
+  margin-bottom: 16px;
+  padding: 12px;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+}
+
+.sort-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sort-status {
+  font-size: 14px;
+  color: #666;
+  font-style: italic;
+}
+
+#sort-messages {
+  padding: 8px 16px;
+  font-weight: bold;
+}
+
+/**/
+
+.priority-tags-list {
+  max-height: 150px;
+  overflow-y: auto;
+  background-color: white;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
 .contact-item {
   padding: 8px 12px;
   border-bottom: 1px solid #f3f2ef;

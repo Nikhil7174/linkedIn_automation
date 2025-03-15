@@ -39,11 +39,11 @@ export interface LinkedInMessage {
     templates?: AutomationTemplates;
   }
   
-  export interface UserPreferences {
-    importantContacts?: string[];
-    automationSettings?: AutomationSettings;
-    priorityTags?: string[];
-  }
+  // export interface UserPreferences {
+  //   importantContacts?: string[];
+  //   automationSettings?: AutomationSettings;
+  //   priorityTags?: string[];
+  // }
   
   export interface IMessage {
     link: string;
@@ -51,14 +51,17 @@ export interface LinkedInMessage {
     preview: string;
     timestamp: string;
     responded?: boolean;
-    priority?: 'high' | '';
+    priority?: string;
+    keywords: string[];
   }
   
   export interface IUserPreferences {
     importantContacts?: string[];
-    customKeywords?: {
-      high?: RegExp[];
-    };
+    // customKeywords?: {
+    //   high?: RegExp[];
+    // };
+    priorityTags?: string[];  // Add missing property
+    automationSettings?: IAutomationSettings;
   }
   
   export interface IAutomationSettings {

@@ -1,5 +1,5 @@
 // AutomationManager.ts
-import { UserPreferences, AutomationSettings } from "../lib/types";
+import { IUserPreferences, AutomationSettings } from "../lib/types";
 import { MessageAutomation } from "../content/automation";
 import { UIUtils } from "./uiUtils";
 
@@ -11,7 +11,7 @@ export class AutomationManager {
   }
   
   public loadAutomationSettings(): void {
-    chrome.storage.local.get(['userPreferences'], (result: { userPreferences?: UserPreferences }) => {
+    chrome.storage.local.get(['userPreferences'], (result: { userPreferences?: IUserPreferences }) => {
       if (result.userPreferences && result.userPreferences.automationSettings) {
         const settings: AutomationSettings = result.userPreferences.automationSettings;
         const automationToggle = document.getElementById('automation-toggle') as HTMLInputElement | null;
@@ -41,8 +41,8 @@ export class AutomationManager {
     
     this.automation.enabled = enabled;
     
-    chrome.storage.local.get(['userPreferences'], (result: { userPreferences?: UserPreferences }) => {
-      const preferences: UserPreferences = result.userPreferences || {};
+    chrome.storage.local.get(['userPreferences'], (result: { userPreferences?: IUserPreferences }) => {
+      const preferences: IUserPreferences = result.userPreferences || {};
       if (!preferences.automationSettings) {
         preferences.automationSettings = { enabled: false };
       }
