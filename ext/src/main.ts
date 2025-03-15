@@ -1,7 +1,7 @@
-import { UIManager } from "./content/uiManager";
-import { ObserverManager } from "./content/observerManager";
-import { MessageManager } from "./content/messageManager";
-import { SortManager } from "./content/sortManager";
+import { UIManager } from "./util/uiManager";
+import { ObserverManager } from "./util/observerManager";
+import { MessageManager } from "./util/messageManager";
+import { SortManager } from "./util/sortManager";
 
 class LinkedInMessagesManager {
   private uiManager: UIManager;

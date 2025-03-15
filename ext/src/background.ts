@@ -1,6 +1,6 @@
-import { MessagePrioritizer } from "./content/ai";
+import { MessagePrioritizer } from "./util/ai";
 import { LinkedInMessage, IMessage, IUserPreferences } from "./lib/types";
-import { SortManager } from "./content/sortManager"; // Adjust the path as necessary
+import { SortManager } from "./util/sortManager"; // Adjust the path as necessary
 
 export class BackgroundManager {
   private prioritizer: MessagePrioritizer;

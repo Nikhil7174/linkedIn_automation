@@ -2,7 +2,7 @@ import { ContactsManager } from "./contactManager";
 import { PriorityManager } from "./priorityManager";
 import { AutomationManager } from "./automationManager";
 import { StatsManager } from "./statsManager";
-import { MessageAutomation } from "../content/automation";
+import { MessageAutomation } from "../util/automation";
 import './styles/style.css';
 
 export class PopupManager {

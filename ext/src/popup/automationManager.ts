@@ -1,5 +1,5 @@
 import { IUserPreferences, AutomationSettings } from "../lib/types";
-import { MessageAutomation } from "../content/automation";
+import { MessageAutomation } from "../util/automation";
 import { UIUtils } from "./uiUtils";
 
 export class AutomationManager {

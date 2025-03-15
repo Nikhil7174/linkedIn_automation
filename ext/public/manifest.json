@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "linkedIn_automation tool",
+  "name": "LinkedIn Automation Tool",
   "version": "1.0",
-  "description": "messages automation",
+  "description": "Messages automation",
   "permissions": [
     "tabs",
     "scripting",
@@ -22,5 +22,10 @@
   ],
   "action": {
     "default_popup": "popup.html"
+  },
+  "icons": {
+    "16": "./imgs/ln.png",
+    "48": "./imgs/ln.png",
+    "128": "./imgs/ln.png"
   }
 }
